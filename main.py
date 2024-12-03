@@ -32,7 +32,7 @@ clock = pygame.time.Clock()
 
 def healthUpdater(health):
     for x in range(health):
-        screen.blit(heart,(x*blockSize,15))
+        game.blit(heart,(x*blockSize+15,5))
 
 # utility stuff !!
 def clamp(x,min,max):
@@ -53,7 +53,7 @@ def drawBase():
     pygame.draw.rect(game,BLUE,pygame.Rect(0, 0, WIDTH, HEIGHT))
     for x in range(50, int(612-612/5), blockSize):
         for y in range(50, int(612-612/5), blockSize):
-            game.blit(grass,(x,y))
+            game.blit(grass,(x,y+25))
 
 # Game loop
 running = True
@@ -84,12 +84,16 @@ while running:
             screen.blit(pygame.transform.scale(screen, screen.get_size()), (0, 0))
         
 
-    drawBase()
-    game.blit(player,(playerPos[0]*blockSize+50,playerPos[1]*blockSize+50))
-    pygame.draw.rect(screen,BLUE,pygame.Rect(0, 0, WIDTH, HEIGHT))
-    screen.blit(pygame.transform.scale(game, (min(WIDTH,HEIGHT),min(WIDTH,HEIGHT))), ((WIDTH-min(WIDTH,HEIGHT))/2, (HEIGHT-min(WIDTH,HEIGHT))/2))
+    ### BIG SCREEN UPDATER FOLLOWS !!! 
 
+    drawBase()
+    game.blit(player,(playerPos[0]*blockSize+50,playerPos[1]*blockSize+75)) # draw player with offsets accounted for on grid
+    pygame.draw.rect(screen,BLUE,pygame.Rect(0, 0, WIDTH, HEIGHT)) #background ocean
     healthUpdater(health)
+
+    # resizer
+    screen.blit(pygame.transform.scale(game, (min(WIDTH,HEIGHT),min(WIDTH,HEIGHT))), ((WIDTH-min(WIDTH,HEIGHT))/2, (HEIGHT-min(WIDTH,HEIGHT))/2))
+    #final update
     pygame.display.flip()
 
 pygame.quit()
