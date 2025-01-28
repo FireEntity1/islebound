@@ -1,5 +1,10 @@
+from os import wait
+from re import X
 import pygame
 import random
+from time import sleep
+
+
 
 
 WIDTH = 612
@@ -13,6 +18,7 @@ grass = pygame.transform.scale(pygame.image.load("assets/grass.png"),(blockSize,
 player = pygame.transform.scale(pygame.image.load("assets/player.png"),(blockSize,blockSize))
 heart = pygame.transform.scale(pygame.image.load("assets/heart.png"),(blockSize,blockSize))
 spider = pygame.transform.scale(pygame.image.load("assets/bug.png"),(blockSize,blockSize))
+food = pygame.transform.scale(pygame.image.load("assets/food.png"),(blockSize,blockSize))
 
 entity = {
     "x":0,
@@ -41,9 +47,11 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT),pygame.RESIZABLE)
 pygame.display.set_caption("Islebound")
 clock = pygame.time.Clock()
 
+gameover  = pygame.mixer.Sound("assets/game-over.mp3")
+hit = pygame.mixer.Sound("assets/move.mp3")
+move = pygame.mixer.Sound("assets/death.wav")
 
 tickCounter = 0
-
 
 def healthUpdater(health):
     for x in range(health):
@@ -71,9 +79,17 @@ class Entity:
     def render(self):
         if self.type=="spider":
             game.blit(spider, (self.x*blockSize+50,self.y*blockSize+75))
-        
+
+class Food:
+    def __init__(self,x,y) -> None:
+        self.x = x
+        self.y = y
+    def render(self):
+        game.blit(food, (self.x*blockSize+50,self.y*blockSize+75))
+
 
 entities = []
+foods = []
 
 def drawBase():
     pygame.draw.rect(game,BLUE,pygame.Rect(0, 0, WIDTH, HEIGHT))
@@ -84,6 +100,7 @@ def drawBase():
 
 # Game loop
 running = True
+
 while running:
     clock.tick(FPS)     
     for event in pygame.event.get():
@@ -99,8 +116,15 @@ while running:
                     playerPos[1] -= 1
                 case pygame.K_DOWN:
                     playerPos[1] += 1
+                case pygame.K_SPACE:
+                    for n in entities:
+                        if n.x + 1 >= playerPos[0] >= n.x - 1 and n.y == playerPos[1]:
+                            entities.remove(n)
+                            move.play()
             playerPos[0] = clamp(playerPos[0],0,7)
             playerPos[1] = clamp(playerPos[1],0,7)
+
+
         if event.type == pygame.VIDEORESIZE:
             screen.blit(pygame.transform.scale(screen, event.dict['size']), (0, 0))
             pygame.display.update()
@@ -110,14 +134,19 @@ while running:
             screen.blit(pygame.transform.scale(screen, screen.get_size()), (0, 0))
 
     tickCounter+=1
-    if random.randint(0,100) == 50:
-        if len(entities) < 5:
+    if random.randint(0,80) == 50:
+        if len(entities) < 3:
             entities.append(Entity(random.randint(0,7),random.randint(0,7),"spider"))
+    if random.randint(0,150) == 50:
+        if health < 7:
+            foods.append(Food(random.randint(0,7),random.randint(0,7)))
 
     for n in entities:
         if n.x == playerPos[0] and n.y == playerPos[1] and iFrames == 0:
             wasHit = True
             health -= 1
+            hit.play()
+
     if wasHit == True:
         iFrames += 1
         if iFrames > 30:
@@ -128,25 +157,38 @@ while running:
     drawBase()
     game.blit(player,(playerPos[0]*blockSize+50,playerPos[1]*blockSize+75)) # draw player with offsets accounted for on grid
     pygame.draw.rect(screen,BLUE,pygame.Rect(0, 0, WIDTH, HEIGHT)) #background ocean
- 
+
+    for n in foods:
+        n.render()
+        if playerPos[0] == n.x and playerPos[1] == n.y:
+            health += 1
+            clamp(health,0,7)
+            foods.remove(n)
+
+    if health <= 0:
+        gameover.play()
+        sleep(1.5)
+        pygame.quit()
+
+
     if tickCounter >= 30:
         for n in entities:
             if playerPos[0] > n.x:
                 n.x += 1
             elif playerPos[0] < n.x:
                 n.x -= 1
-            
-            if playerPos[1] > n.y:
-                n.y += 1
-            elif playerPos[1] < n.y:
-                n.y -= 1
+            else:
+                if playerPos[1] > n.y:
+                    n.y += 1
+                elif playerPos[1] < n.y:
+                    n.y -= 1
 
             n.render()
         tickCounter = 0
     for n in entities:
         n.render()
         
-   
+
     
 
     # UI
